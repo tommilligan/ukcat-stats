@@ -1,3 +1,4 @@
+import datetime
 import logging
 
 import bokeh.plotting as bk
@@ -5,12 +6,17 @@ from bokeh.models import Span
 from bokeh.io import export_png, show, output_notebook
 import numpy as np
 from scipy.optimize import curve_fit
+import structlog
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-logger.handlers = [ch]
+# Logging with structlog
+def timestamper(_, __, event_dict):
+    event_dict["time"] = datetime.datetime.now().isoformat()
+    return event_dict
+
+
+structlog.configure(processors=[timestamper, structlog.processors.JSONRenderer()])
+logger = structlog.get_logger(__name__)
+
 
 SCORE = 3000
 X_RANGE = (2000, 3200)
@@ -102,3 +108,6 @@ if is_notebook():
     show(p)
 else:
     export_png(p)
+
+
+logger.info("Complete")
