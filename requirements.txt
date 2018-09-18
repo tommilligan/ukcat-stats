@@ -2,3 +2,4 @@ bokeh==0.13.0
 numpy==1.15.1
 scipy==1.1.0
 structlog==18.2.0
+Pillow==5.2.0
