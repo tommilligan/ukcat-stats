@@ -42,7 +42,6 @@ def sigmoid(x, x0, k):
 
 
 # Input data - UKCAT scores vs deciles
-# https://www.ukcat.ac.uk/ukcat-test/ukcat-results/test-statistics/
 logger.info("Loading data")
 datasets = {
     "2018_interim": {

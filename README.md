@@ -18,3 +18,10 @@ pip install -r requirements.txt
 python plot.py
 ```
 
+## Sources
+
+Current year interim score data:
+https://www.ukcat.ac.uk/ukcat-test/ukcat-results/test-statistics/
+
+For previous years' interim scores:
+https://www.themedicportal.com/interim-ukcat-scores-2018-entry/
