@@ -44,56 +44,100 @@ def sigmoid(x, x0, k):
 # Input data - UKCAT scores vs deciles
 # https://www.ukcat.ac.uk/ukcat-test/ukcat-results/test-statistics/
 logger.info("Loading data")
-x = [2220, 2340, 2420, 2490, 2550, 2610, 2680, 2760, 2870]
+datasets = {
+    "2018_interim": {
+        "color": "lightgreen",
+        "data": [2220, 2340, 2420, 2490, 2550, 2610, 2680, 2760, 2870],
+        "description": "2018 Interim",
+        "offset": 160,
+    },
+    "2017_final": {
+        "color": "blue",
+        "data": [2230, 2340, 2420, 2480, 2540, 2600, 2670, 2750, 2860],
+        "description": "2017 Final",
+        "offset": 0,
+    },
+    "2017_interim": {
+        "color": "lightblue",
+        "data": [2280, 2400, 2480, 2540, 2600, 2660, 2730, 2800, 2920],
+        "description": "2017 Interim",
+        "offset": 0,
+    },
+}
 y = np.linspace(0.1, 0.9, 9)
-
-# fit curve to sigmoid curve formula
-logger.info("Fitting curves")
-popt, pcov = curve_fit(sigmoid, x, y, bounds=((2000, 0.0001), (3000, 0.1)))
-
-
-def sigmoid_fitted(x):
-    return sigmoid(x, *popt)
-
 
 # Create plot
 logger.info("Creating plot")
 p = bk.figure(x_range=X_RANGE, y_range=(0, 1), title="UKCAT Interim Results 2018")
 
-# plot sigmoid
-x_sigmoid = np.linspace(0, 4000, 1000)
-y_sigmoid = sigmoid_fitted(x_sigmoid)
-p.line(
-    x_sigmoid,
-    y_sigmoid,
-    color="purple",
-    legend="Sigmoid x0={:.0f} k={:.4f}".format(*popt),
-)
-
-# plot initial data points
-p.circle(x, y, color="grey", legend="Deciles")
-
 # Score!
 # Calculate lines
 vline = Span(location=SCORE, dimension="height", line_color="red", line_width=1)
-percentile = sigmoid_fitted(SCORE)
-hline = Span(
-    location=percentile,
-    dimension="width",
-    line_color="red",
-    line_width=1,
-    line_dash="dashed",
+p.renderers.append(vline)
+
+
+def plot_sigmoid(x):
+    logger.info("Plotting series")
+
+    # plot sigmoid
+    x_sigmoid = np.linspace(0, 4000, 1000)
+    f = lambda a: sigmoid(a, *x["sigmoid_popt"])
+    y_sigmoid = f(x_sigmoid)
+    p.line(
+        x_sigmoid,
+        y_sigmoid,
+        color=x["color"],
+        legend="Sigmoid x0={:.0f} k={:.4f}".format(*x["sigmoid_popt"]),
+    )
+
+    percentile = f(SCORE)
+    hline = Span(
+        location=percentile,
+        dimension="width",
+        line_color=x["color"],
+        line_width=1,
+        line_dash="dashed",
+    )
+    p.renderers.append(hline)
+
+    # Add text
+    p.text(
+        [X_RANGE[0] + x["offset"]],
+        [percentile],
+        [" ~{0:.3f}%".format(percentile)],
+        text_baseline="top",
+        text_align="left",
+        text_font_size="10px",
+    )
+
+
+for x in datasets.values():
+    # fit curve to sigmoid curve formula
+    logger.info("Fitting curves")
+    popt, pcov = curve_fit(sigmoid, x["data"], y, bounds=((2000, 0.0001), (3000, 0.1)))
+    x["sigmoid_popt"] = popt
+
+    plot_sigmoid(x)
+
+    # plot initial data points
+    p.circle(x["data"], y, color=x["color"], legend=x["description"])
+
+
+# Calculate this year's final results based on the interim
+x0_diff = (
+    datasets["2017_final"]["sigmoid_popt"][0]
+    - datasets["2017_interim"]["sigmoid_popt"][0]
 )
-p.renderers.extend([vline, hline])
-# Add text
-p.text([SCORE], [0], [""], text_baseline="bottom", text_align="right")
-p.text(
-    [X_RANGE[0]],
-    [percentile],
-    [" ~{0:.3f}%".format(percentile)],
-    text_baseline="top",
-    text_align="left",
-)
+popt = list(datasets["2018_interim"]["sigmoid_popt"])
+popt[0] = popt[0] + x0_diff
+dataset = {
+    "sigmoid_popt": popt,
+    "color": "green",
+    "offset": 160,
+    "description": "2018 Final (predicted)",
+}
+plot_sigmoid(dataset)
+
 
 # legend styling
 p.legend.location = "center_left"
